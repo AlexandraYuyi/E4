@@ -136,6 +136,7 @@ public class Ventana extends JFrame implements ActionListener, KeyListener, Focu
         tfid.setFont(new Font("Verdana", Font.BOLD, 15));
         tfid.setBounds(75, 37, 40, 30);
         tfid.setEnabled(false);
+        tfid.setHorizontalAlignment(JTextField.CENTER);
         p1.add(tfid);
 
         foto = new JLabel();
