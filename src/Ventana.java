@@ -34,6 +34,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -214,7 +215,9 @@ public class Ventana extends JFrame implements ActionListener, KeyListener, Focu
         p1.add(cumple);
 
         fecha = new JDateChooser();
+        fecha.setMaxSelectableDate(new Date());
         fecha.setBounds(300, 727, 120, 30);
+        fecha.setLocale(new Locale("es", "ES"));
         p1.add(fecha);
 
         Image imgNew = new ImageIcon("C:/Users/alexa/OneDrive/Documentos/NetBeansProjects/Registro/clean.png").getImage();
@@ -229,6 +232,7 @@ public class Ventana extends JFrame implements ActionListener, KeyListener, Focu
         editar = new JButton(iconEdit);
         editar.setBounds(150, 800, 70, 70);
         editar.addActionListener(this);
+        editar.setEnabled(false);
         p1.add(editar);
 
         Image imgSave = new ImageIcon("C:/Users/alexa/OneDrive/Documentos/NetBeansProjects/Registro/add.png").getImage();
@@ -267,7 +271,7 @@ public class Ventana extends JFrame implements ActionListener, KeyListener, Focu
         warningEmail.setVisible(false);
         p1.add(warningEmail);
         
-        warningVacio = new JLabel("Ningún campo debe estar vacío, por favor llénelos");
+        warningVacio = new JLabel("Datos inválidos o vacíos. Por favor verifique");
         warningVacio.setFont(new Font("Verdana", Font.BOLD, 15));
         warningVacio.setForeground(Color.red);
         warningVacio.setBounds(40, 760, 420, 30);
@@ -304,6 +308,9 @@ public class Ventana extends JFrame implements ActionListener, KeyListener, Focu
 
                 tftelefono.setText(tabla.getValueAt(fila, 5).toString());
                 tfemail.setText(tabla.getValueAt(fila, 6).toString());
+                
+                editar.setEnabled(true);
+                guardar.setEnabled(false);
 
             }
         });
@@ -329,6 +336,8 @@ public class Ventana extends JFrame implements ActionListener, KeyListener, Focu
             cs.setString(7, Ruta);
 
             cs.execute();
+            
+            editar.setEnabled(false);
 
             System.out.println("persona registrada");
 
@@ -356,6 +365,7 @@ public class Ventana extends JFrame implements ActionListener, KeyListener, Focu
         warningTelefono.setVisible(false);
         warningEmail.setVisible(false);
         warningVacio.setVisible(false);
+        editar.setEnabled(false);
         
     }
 
@@ -438,6 +448,8 @@ public class Ventana extends JFrame implements ActionListener, KeyListener, Focu
             cs.setString(8, id);
 
             cs.execute();
+            
+            editar.setEnabled(false);
 
             System.out.println("persona " + id + " editada");
 
@@ -458,6 +470,7 @@ public class Ventana extends JFrame implements ActionListener, KeyListener, Focu
             String SQL = "delete from persona where id=" + tabla.getValueAt(fila, 0);
             Statement st = cn.createStatement();
             int n = st.executeUpdate(SQL);
+            editar.setEnabled(false);
             if (n >= 0) {
                 System.out.println("Registro " + id + " eliminado");
             }
@@ -468,7 +481,7 @@ public class Ventana extends JFrame implements ActionListener, KeyListener, Focu
     }
 
     public boolean validarEmail(String email) {
-        if(email.isEmpty()){
+        if(email.isEmpty() || email.length()>45){
             return false;
         }else{
             String regex = "^[A-Za-z0-9+_.-]+@(.+)$";
@@ -479,13 +492,20 @@ public class Ventana extends JFrame implements ActionListener, KeyListener, Focu
         
     }
 
-    public boolean validarCedula(String cedula) {
+    public boolean cedulaExiste(String cedula){
         ArrayList<String> listaCedulas = new ArrayList<>();
         for (int i = 0; i < tabla.getRowCount(); i++) {
             listaCedulas.add(tabla.getValueAt(i, 3).toString());
         }
         
-        if(cedula.isEmpty() || listaCedulas.contains(cedula)){
+        return listaCedulas.contains(cedula);
+        
+    }
+    
+    public boolean validarCedula(String cedula) {
+        
+        
+        if(cedula.isEmpty() || cedula.length()>8){
             return false;
         }else{
             int numCed = Integer.parseInt(cedula);
@@ -569,7 +589,7 @@ public class Ventana extends JFrame implements ActionListener, KeyListener, Focu
         codigos.add("0424"); // Móviles Digitel
         codigos.add("0426"); // Móviles Digitel
 
-        if(telefono.isEmpty() || telefono.length()<5){
+        if(telefono.isEmpty() || telefono.length()<5 || telefono.length()>45){
             return false;
         }else{
             if (codigos.contains(telefono.substring(0, 4)) && telefono.length()==11){
@@ -581,8 +601,8 @@ public class Ventana extends JFrame implements ActionListener, KeyListener, Focu
         
     }
 
-    public boolean verificarEntradas(String email, String telefono, String cedula) {
-        if(validarEmail(email) && validarTelefono(telefono) && validarCedula(cedula)){
+    public boolean verificarEntradas(String email, String telefono, String cedula, String nom, String ap) {
+        if(validarEmail(email) && validarTelefono(telefono) && validarCedula(cedula) && tfnom.getText().length()<45 && tfapellido.getText().length()<45){
             return true;
         }else{
             return false;
@@ -599,8 +619,8 @@ public class Ventana extends JFrame implements ActionListener, KeyListener, Focu
         if (e.getSource() == guardar) {
             
             try {
-                if(verificarEntradas(tfemail.getText(), tftelefono.getText(), tfcedula.getText()) && !tfnom.getText().isEmpty() && !tfapellido.getText().isEmpty()
-                    && fecha.getCalendar() != null){
+                if(verificarEntradas(tfemail.getText(), tftelefono.getText(), tfcedula.getText(), tfnom.getText(), tfapellido.getText()) && !tfnom.getText().isEmpty() && !tfapellido.getText().isEmpty()
+                    && fecha.getCalendar() != null && cedulaExiste(tfcedula.getText())){
                 insertarPersona();
                 limpiar();
                 mostrarPersonas();
@@ -618,6 +638,10 @@ public class Ventana extends JFrame implements ActionListener, KeyListener, Focu
                   }
             
             if(validarCedula(tfcedula.getText())){
+                warningCedula.setVisible(false);
+            }else
+            
+            if(cedulaExiste(tfcedula.getText())){
                 warningCedula.setVisible(false);
             }else{
                 warningCedula.setVisible(true);
@@ -638,15 +662,17 @@ public class Ventana extends JFrame implements ActionListener, KeyListener, Focu
 
         if (e.getSource() == nuevo) {
             limpiar();
+            guardar.setEnabled(true);
         }
 
         if (e.getSource() == editar) {
             try {
-                if(verificarEntradas(tfemail.getText(), tftelefono.getText(), tfcedula.getText()) && !tfnom.getText().isEmpty() && !tfapellido.getText().isEmpty()
+                if(verificarEntradas(tfemail.getText(), tftelefono.getText(), tfcedula.getText(), tfnom.getText(), tfapellido.getText()) && !tfnom.getText().isEmpty() && !tfapellido.getText().isEmpty()
                     && fecha.getCalendar() != null){
                 modificarPersona();
                 limpiar();
                 mostrarPersonas();
+                guardar.setEnabled(true);
             }else{
                 if(validarEmail(tfemail.getText())){
                 warningEmail.setVisible(false);
@@ -675,6 +701,7 @@ public class Ventana extends JFrame implements ActionListener, KeyListener, Focu
             }
             } catch (Exception er) {
                 warningVacio.setVisible(true);
+                guardar.setEnabled(false);
             }
             
         }
@@ -683,6 +710,7 @@ public class Ventana extends JFrame implements ActionListener, KeyListener, Focu
             eliminar();
             mostrarPersonas();
             limpiar();
+            guardar.setEnabled(true);
         }
 
         if (e.getSource() == select) {
